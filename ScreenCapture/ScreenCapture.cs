@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Threading;
 using SharpDX;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
@@ -12,6 +14,9 @@ using Resource = SharpDX.DXGI.Resource;
 namespace ScreenCaptureNS {
 
     public static class ScreenCapture {
+
+        public static Boolean CaptureActive { get; private set; }
+        private static Thread Thread;
 
         private static Factory1 Factory1;
         private static Adapter1 Adapter1;
@@ -30,10 +35,42 @@ namespace ScreenCaptureNS {
         private static Int32 MakeScreenshot_LastAdapterIndexValue;
 
         static ScreenCapture() {
+            CaptureActive = false;
+            Thread = null;
             InitializeStaticVariables(0, 0, true);
         }
 
+        public static void StartCapturing(Action<Bitmap> onCaptured, Int32 minimalDelay = 0, Int32 displayIndex = 0, Int32 adapterIndex = 0, Int32 maxTimeout = 60000) {
+            CaptureActive = true;
+            Thread = new Thread(() => ThreadMain(onCaptured, minimalDelay, displayIndex, adapterIndex, maxTimeout));
+            Thread.IsBackground = true;
+            Thread.Priority = ThreadPriority.Lowest;
+            Thread.Start();
+        }
+
+        public static void StopCapturing() {
+            CaptureActive = false;
+            Thread.Join();
+            Thread = null;
+            DisposeVariables(true);
+        }
+
+        private static void ThreadMain(Action<Bitmap> onCaptured, Int32 minimalDelay, Int32 displayIndex, Int32 adapterIndex, Int32 maxTimeout) {
+            while (CaptureActive) {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                Bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppRgb);
+                InnerMakeScreenshot(displayIndex, adapterIndex, maxTimeout);
+                if (CaptureActive) onCaptured(Bitmap);
+                Thread.Sleep((Int32)Math.Max(minimalDelay - stopwatch.ElapsedMilliseconds, 0));
+            }
+        }
+
         public static Bitmap MakeScreenshot(Int32 displayIndex = 0, Int32 adapterIndex = 0, Int32 maxTimeout = 60000) {
+            if (Thread != null) throw new Exception("Do not call MakeScreenshot while capturing is active!");
+            return InnerMakeScreenshot(displayIndex, adapterIndex, maxTimeout);
+        }
+
+        private static Bitmap InnerMakeScreenshot(Int32 displayIndex, Int32 adapterIndex, Int32 maxTimeout) {
             InitializeStaticVariables(displayIndex, adapterIndex);
             OutputDuplicateFrameInformation duplicateFrameInformation;
             Resource screenResource;
@@ -61,7 +98,7 @@ namespace ScreenCaptureNS {
             Boolean displayIndexChanged = MakeScreenshot_LastDisplayIndexValue != displayIndex;
             Boolean adapterIndexChanged = MakeScreenshot_LastAdapterIndexValue != adapterIndex;
             if (displayIndexChanged || adapterIndexChanged || forcedInitialization) {
-                DisposeVariables();
+                DisposeVariables(true);
                 Factory1 = new Factory1();
                 Adapter1 = Factory1.GetAdapter1(adapterIndex);
                 Device = new Device(Adapter1);
@@ -91,6 +128,11 @@ namespace ScreenCaptureNS {
         }
 
         public static void DisposeVariables() {
+            DisposeVariables(false);
+        }
+
+        private static void DisposeVariables(Boolean isSafe) {
+            if (isSafe != true && Thread != null) throw new Exception("Do not call DisposeVariables while capturing is active!");
             Bitmap?.Dispose();
             OutputDuplication?.Dispose();
             Texture2D?.Dispose();
@@ -99,6 +141,8 @@ namespace ScreenCaptureNS {
             Device?.Dispose();
             Adapter1?.Dispose();
             Factory1?.Dispose();
+            MakeScreenshot_LastAdapterIndexValue = -1;
+            MakeScreenshot_LastDisplayIndexValue = -1;
         }
 
     }
