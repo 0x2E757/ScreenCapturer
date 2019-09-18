@@ -56,8 +56,9 @@ namespace ScreenCaptureNS {
         }
 
         private static void ThreadMain(Action<Bitmap> onCaptured, Int32 minimalDelay, Int32 displayIndex, Int32 adapterIndex, Int32 maxTimeout) {
+            Stopwatch stopwatch = new Stopwatch();
             while (CaptureActive) {
-                Stopwatch stopwatch = Stopwatch.StartNew();
+                stopwatch.Restart();
                 Bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppRgb);
                 InnerMakeScreenshot(displayIndex, adapterIndex, maxTimeout);
                 if (CaptureActive) onCaptured(Bitmap);
@@ -72,9 +73,8 @@ namespace ScreenCaptureNS {
 
         private static Bitmap InnerMakeScreenshot(Int32 displayIndex, Int32 adapterIndex, Int32 maxTimeout) {
             InitializeStaticVariables(displayIndex, adapterIndex);
-            OutputDuplicateFrameInformation duplicateFrameInformation;
             Resource screenResource;
-            OutputDuplication.AcquireNextFrame(maxTimeout, out duplicateFrameInformation, out screenResource);
+            OutputDuplication.AcquireNextFrame(maxTimeout, out _, out screenResource);
             Texture2D screenTexture2D = screenResource.QueryInterface<Texture2D>();
             Device.ImmediateContext.CopyResource(screenTexture2D, Texture2D);
             DataBox dataBox = Device.ImmediateContext.MapSubresource(Texture2D, 0, MapMode.Read, MapFlags.None);
