@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>ScreenCapture</id>
+    <version>1.0.0</version>
+    <authors>0x2E757</authors>
+    <owners>0x2E757</owners>
+    <licenseUrl>https://github.com/0x2E757/ScreenCapture/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/0x2E757/ScreenCapture/</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Library for fast screenshot make and screen capture</description>
+    <copyright>Copyright 2019</copyright>
+    <tags>screencapture screenshot fast screen display monitor capture capturing</tags>
+  </metadata>
+  <files>
+    <file src="ScreenCapture\bin\Release\*.dll" target="lib" />
+    <file src="ScreenCapture\bin\Release\*.pdb" target="lib" />
+  </files>
+</package>
