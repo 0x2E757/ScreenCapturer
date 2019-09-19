@@ -11,9 +11,9 @@ using Device = SharpDX.Direct3D11.Device;
 using MapFlags = SharpDX.Direct3D11.MapFlags;
 using Resource = SharpDX.DXGI.Resource;
 
-namespace ScreenCaptureNS {
+namespace ScreenCapturerNS {
 
-    public static class ScreenCapture {
+    public static class ScreenCapturer {
 
         public static Boolean CaptureActive { get; private set; }
         private static Thread Thread;
@@ -34,7 +34,7 @@ namespace ScreenCaptureNS {
         private static Int32 MakeScreenshot_LastDisplayIndexValue;
         private static Int32 MakeScreenshot_LastAdapterIndexValue;
 
-        static ScreenCapture() {
+        static ScreenCapturer() {
             CaptureActive = false;
             Thread = null;
             InitializeStaticVariables(0, 0, true);

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29230.47
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScreenCapture", "ScreenCapture\ScreenCapture.csproj", "{9B88083B-AA8F-4484-8488-5A8BEE2CDD0A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScreenCapturer", "ScreenCapturer\ScreenCapturer.csproj", "{9B88083B-AA8F-4484-8488-5A8BEE2CDD0A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

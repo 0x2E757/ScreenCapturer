@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <package>
   <metadata>
-    <id>ScreenCapture</id>
+    <id>ScreenCapturer</id>
     <version>1.0.0</version>
     <authors>0x2E757</authors>
     <owners>0x2E757</owners>
-    <licenseUrl>https://github.com/0x2E757/ScreenCapture/blob/master/LICENSE</licenseUrl>
-    <projectUrl>https://github.com/0x2E757/ScreenCapture/</projectUrl>
+    <licenseUrl>https://github.com/0x2E757/ScreenCapturer/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/0x2E757/ScreenCapturer/</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Library for fast screenshot make and screen capture based on SharpDX package.</description>
     <copyright>Copyright 2019</copyright>
-    <tags>screencapture screenshot fast screen display monitor capture capturing</tags>
+    <tags>screencapture screencapturer screenshot fast screen display monitor capture capturing</tags>
   </metadata>
   <files>
-    <file src="ScreenCapture\bin\Release\*.dll" target="lib" />
-    <file src="ScreenCapture\bin\Release\*.pdb" target="lib" />
+    <file src="ScreenCapturer\bin\Release\*.dll" target="lib" />
+    <file src="ScreenCapturer\bin\Release\*.pdb" target="lib" />
   </files>
 </package>

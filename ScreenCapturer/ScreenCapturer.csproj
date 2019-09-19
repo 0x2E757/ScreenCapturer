@@ -7,8 +7,8 @@
     <ProjectGuid>{9B88083B-AA8F-4484-8488-5A8BEE2CDD0A}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ScreenCapture</RootNamespace>
-    <AssemblyName>ScreenCapture</AssemblyName>
+    <RootNamespace>ScreenCapturer</RootNamespace>
+    <AssemblyName>ScreenCapturer</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -45,7 +45,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ScreenCapture.cs" />
+    <Compile Include="ScreenCapturer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
