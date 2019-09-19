@@ -6,7 +6,7 @@
     <authors>0x2E757</authors>
     <owners>0x2E757</owners>
     <licenseUrl>https://github.com/0x2E757/ScreenCapturer/blob/master/LICENSE</licenseUrl>
-    <projectUrl>https://github.com/0x2E757/ScreenCapturer/</projectUrl>
+    <repository type="git" url="https://github.com/0x2E757/ScreenCapturer.git" branch="master" />
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Library for fast screenshot make and screen capture based on SharpDX package.</description>
     <copyright>Copyright 2019</copyright>
