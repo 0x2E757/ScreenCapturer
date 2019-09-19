@@ -8,7 +8,7 @@
     <licenseUrl>https://github.com/0x2E757/ScreenCapture/blob/master/LICENSE</licenseUrl>
     <projectUrl>https://github.com/0x2E757/ScreenCapture/</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Library for fast screenshot make and screen capture</description>
+    <description>Library for fast screenshot make and screen capture based on SharpDX package.</description>
     <copyright>Copyright 2019</copyright>
     <tags>screencapture screenshot fast screen display monitor capture capturing</tags>
   </metadata>

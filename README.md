@@ -1,6 +1,6 @@
 # ScreenCapture
 
-Library for fast screenshot make and screen capture. Available as NuGet package.
+Library for fast screenshot make and screen capture based on [SharpDX](https://www.nuget.org/packages/SharpDX/) package. Available as NuGet package.
 
 ## Usage
 
