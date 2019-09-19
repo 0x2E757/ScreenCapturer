@@ -121,6 +121,8 @@ namespace ScreenCapturerNS {
                 };
                 Texture2D = new Texture2D(Device, Texture2DDescription);
                 OutputDuplication = Output1.DuplicateOutput(Device);
+                OutputDuplication.AcquireNextFrame(60000, out _, out _);
+                OutputDuplication.ReleaseFrame();
                 Bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppRgb);
                 MakeScreenshot_LastAdapterIndexValue = adapterIndex;
                 MakeScreenshot_LastDisplayIndexValue = displayIndex;
