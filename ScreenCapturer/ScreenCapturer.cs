@@ -16,6 +16,8 @@ namespace ScreenCapturerNS {
     public static class ScreenCapturer {
 
         public static Boolean CaptureActive { get; private set; }
+        public static Boolean CallbackEnabled { get; private set; }
+
         private static Thread Thread;
 
         private static Factory1 Factory1;
@@ -36,6 +38,7 @@ namespace ScreenCapturerNS {
 
         static ScreenCapturer() {
             CaptureActive = false;
+            CallbackEnabled = true;
             Thread = null;
             InitializeStaticVariables(0, 0, true);
         }
@@ -55,13 +58,21 @@ namespace ScreenCapturerNS {
             DisposeVariables(true);
         }
 
+        public static void EnableCallback() {
+            CallbackEnabled = true;
+        }
+
+        public static void DisableCallback() {
+            CallbackEnabled = false;
+        }
+
         private static void ThreadMain(Action<Bitmap> onCaptured, Int32 minimalDelay, Int32 displayIndex, Int32 adapterIndex, Int32 maxTimeout) {
             Stopwatch stopwatch = new Stopwatch();
             while (CaptureActive) {
                 stopwatch.Restart();
                 Bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppRgb);
                 InnerMakeScreenshot(displayIndex, adapterIndex, maxTimeout);
-                if (CaptureActive) onCaptured(Bitmap);
+                if (CaptureActive && CallbackEnabled) onCaptured(Bitmap);
                 Thread.Sleep((Int32)Math.Max(minimalDelay - stopwatch.ElapsedMilliseconds, 0));
             }
         }
