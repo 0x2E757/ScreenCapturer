@@ -33,8 +33,8 @@ namespace ScreenCapturerNS {
         private static OutputDuplication OutputDuplication;
         private static Bitmap Bitmap;
 
-        private static Int32 MakeScreenshot_LastDisplayIndexValue;
-        private static Int32 MakeScreenshot_LastAdapterIndexValue;
+        private static Int32 MakeScreenshot_LastDisplayIndexValue = 0;
+        private static Int32 MakeScreenshot_LastAdapterIndexValue = 0;
 
         static ScreenCapturer() {
             CaptureActive = false;
