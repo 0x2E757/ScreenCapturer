@@ -154,8 +154,8 @@ namespace ScreenCapturerNS {
             Device?.Dispose();
             Adapter1?.Dispose();
             Factory1?.Dispose();
-            MakeScreenshot_LastAdapterIndexValue = -1;
-            MakeScreenshot_LastDisplayIndexValue = -1;
+            MakeScreenshot_LastAdapterIndexValue = 0;
+            MakeScreenshot_LastDisplayIndexValue = 0;
         }
 
     }
