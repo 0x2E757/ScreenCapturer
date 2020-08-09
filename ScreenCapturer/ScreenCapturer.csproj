@@ -46,6 +46,8 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EventArgs\OnCaptureStopEventArgs.cs" />
+    <Compile Include="EventArgs\OnScreenUpdatedEventArgs.cs" />
     <Compile Include="ScreenCapturer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -1,7 +1,8 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Collections.Concurrent;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using SharpDX;
 using SharpDX.Direct3D11;
@@ -15,149 +16,181 @@ namespace ScreenCapturerNS {
 
     public static class ScreenCapturer {
 
-        public static Boolean CaptureActive { get; private set; }
-        public static Boolean CallbackEnabled { get; private set; }
+        private enum Status : Int32 {
+            Starts = 1,
+            Active = 2,
+            Stops = 3,
+            Inactive = 4,
+        }
 
-        private static Thread Thread;
+        private static Exception globalException;
+        private static AutoResetEvent waitHandle;
+        private static ConcurrentQueue<Bitmap> bitmapQueue;
+        private static Thread captureThread;
+        private static Thread callbackThread;
+        private static volatile Status status;
 
-        private static Factory1 Factory1;
-        private static Adapter1 Adapter1;
-        private static Device Device;
-        private static Output Output;
-        private static Output1 Output1;
-        private static Int32 Width;
-        private static Int32 Height;
-        private static Rectangle Bounds;
-        private static Texture2DDescription Texture2DDescription;
-        private static Texture2D Texture2D;
-        private static OutputDuplication OutputDuplication;
-        private static Bitmap Bitmap;
+        public static event EventHandler<OnScreenUpdatedEventArgs> OnScreenUpdated;
+        public static event EventHandler<OnCaptureStopEventArgs> OnCaptureStop;
+        public static Boolean SkipFirstFrame;
+        public static Boolean SkipFrames;
+        public static Boolean PreserveBitmap;
 
-        private static Int32 MakeScreenshot_LastDisplayIndexValue;
-        private static Int32 MakeScreenshot_LastAdapterIndexValue;
+        public static Boolean IsActive => status != Status.Inactive;
+        public static Boolean IsNotActive => status == Status.Inactive;
 
         static ScreenCapturer() {
-            CaptureActive = false;
-            CallbackEnabled = true;
-            Thread = null;
-            InitializeStaticVariables(0, 0, true);
+            globalException = null;
+            waitHandle = null;
+            bitmapQueue = null;
+            captureThread = null;
+            callbackThread = null;
+            status = Status.Inactive;
+            SkipFirstFrame = true;
+            SkipFrames = true;
+            PreserveBitmap = false;
         }
 
-        public static void StartCapturing(Action<Bitmap> onCaptured, Int32 minimalDelay = 0, Int32 displayIndex = 0, Int32 adapterIndex = 0, Int32 maxTimeout = 60000) {
-            CaptureActive = true;
-            Thread = new Thread(() => ThreadMain(onCaptured, minimalDelay, displayIndex, adapterIndex, maxTimeout));
-            Thread.IsBackground = true;
-            Thread.Priority = ThreadPriority.Lowest;
-            Thread.Start();
+        public static void StartCapture(Int32 displayIndex = 0, Int32 adapterIndex = 0) {
+            StartCapture(null, displayIndex, adapterIndex);
         }
 
-        public static void StopCapturing() {
-            CaptureActive = false;
-            Thread.Join();
-            Thread = null;
-            DisposeVariables(true);
-        }
-
-        public static void EnableCallback() {
-            CallbackEnabled = true;
-        }
-
-        public static void DisableCallback() {
-            CallbackEnabled = false;
-        }
-
-        private static void ThreadMain(Action<Bitmap> onCaptured, Int32 minimalDelay, Int32 displayIndex, Int32 adapterIndex, Int32 maxTimeout) {
-            Stopwatch stopwatch = new Stopwatch();
-            while (CaptureActive) {
-                stopwatch.Restart();
-                Bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppRgb);
-                InnerMakeScreenshot(displayIndex, adapterIndex, maxTimeout);
-                if (CaptureActive && CallbackEnabled) onCaptured(Bitmap);
-                Thread.Sleep((Int32)Math.Max(minimalDelay - stopwatch.ElapsedMilliseconds, 0));
+        public static void StartCapture(Action<Bitmap> onScreenUpdated, Int32 displayIndex = 0, Int32 adapterIndex = 0) {
+            if (status == Status.Inactive) {
+                waitHandle = new AutoResetEvent(false);
+                bitmapQueue = new ConcurrentQueue<Bitmap>();
+                captureThread = new Thread(() => CaptureMain(adapterIndex, displayIndex));
+                callbackThread = new Thread(() => CallbackMain(onScreenUpdated));
+                status = Status.Starts;
+                captureThread.Start();
+                callbackThread.Start();
             }
         }
 
-        public static Bitmap MakeScreenshot(Int32 displayIndex = 0, Int32 adapterIndex = 0, Int32 maxTimeout = 60000) {
-            if (Thread != null) throw new Exception("Do not call MakeScreenshot while capturing is active!");
-            return InnerMakeScreenshot(displayIndex, adapterIndex, maxTimeout);
-        }
-
-        private static Bitmap InnerMakeScreenshot(Int32 displayIndex, Int32 adapterIndex, Int32 maxTimeout) {
-            InitializeStaticVariables(displayIndex, adapterIndex);
-            Resource screenResource;
-            OutputDuplication.AcquireNextFrame(maxTimeout, out _, out screenResource);
-            Texture2D screenTexture2D = screenResource.QueryInterface<Texture2D>();
-            Device.ImmediateContext.CopyResource(screenTexture2D, Texture2D);
-            DataBox dataBox = Device.ImmediateContext.MapSubresource(Texture2D, 0, MapMode.Read, MapFlags.None);
-            BitmapData bitmapData = Bitmap.LockBits(Bounds, ImageLockMode.WriteOnly, Bitmap.PixelFormat);
-            IntPtr dataBoxPointer = dataBox.DataPointer;
-            IntPtr bitmapDataPointer = bitmapData.Scan0;
-            for (Int32 y = 0; y < Height; y++) {
-                Utilities.CopyMemory(bitmapDataPointer, dataBoxPointer, Width * 4);
-                dataBoxPointer = IntPtr.Add(dataBoxPointer, dataBox.RowPitch);
-                bitmapDataPointer = IntPtr.Add(bitmapDataPointer, bitmapData.Stride);
-            }
-            Bitmap.UnlockBits(bitmapData);
-            Device.ImmediateContext.UnmapSubresource(Texture2D, 0);
-            OutputDuplication.ReleaseFrame();
-            screenTexture2D.Dispose();
-            screenResource.Dispose();
-            return Bitmap;
-        }
-
-        private static void InitializeStaticVariables(Int32 displayIndex, Int32 adapterIndex, Boolean forcedInitialization = false) {
-            Boolean displayIndexChanged = MakeScreenshot_LastDisplayIndexValue != displayIndex;
-            Boolean adapterIndexChanged = MakeScreenshot_LastAdapterIndexValue != adapterIndex;
-            if (displayIndexChanged || adapterIndexChanged || forcedInitialization) {
-                DisposeVariables(true);
-                Factory1 = new Factory1();
-                Adapter1 = Factory1.GetAdapter1(adapterIndex);
-                Device = new Device(Adapter1);
-                Output = Adapter1.GetOutput(displayIndex);
-                Output1 = Output.QueryInterface<Output1>();
-                Width = Output1.Description.DesktopBounds.Right - Output1.Description.DesktopBounds.Left;
-                Height = Output1.Description.DesktopBounds.Bottom - Output1.Description.DesktopBounds.Top;
-                Bounds = new Rectangle(Point.Empty, new Size(Width, Height));
-                Texture2DDescription = new Texture2DDescription {
-                    CpuAccessFlags = CpuAccessFlags.Read,
-                    BindFlags = BindFlags.None,
-                    Format = Format.B8G8R8A8_UNorm,
-                    Width = Width,
-                    Height = Height,
-                    OptionFlags = ResourceOptionFlags.None,
-                    MipLevels = 1,
-                    ArraySize = 1,
-                    SampleDescription = { Count = 1, Quality = 0 },
-                    Usage = ResourceUsage.Staging
-                };
-                Texture2D = new Texture2D(Device, Texture2DDescription);
-                OutputDuplication = Output1.DuplicateOutput(Device);
-                Resource screenResource;
-                OutputDuplication.AcquireNextFrame(60000, out _, out screenResource);
-                screenResource.Dispose();
-                OutputDuplication.ReleaseFrame();
-                Bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppRgb);
-                MakeScreenshot_LastAdapterIndexValue = adapterIndex;
-                MakeScreenshot_LastDisplayIndexValue = displayIndex;
+        public static void StopCapture() {
+            if (status == Status.Active) {
+                status = Status.Stops;
             }
         }
 
-        public static void DisposeVariables() {
-            DisposeVariables(false);
+        private static void CaptureMain(Int32 adapterIndex, Int32 displayIndex) {
+            Resource screenResource = null;
+            try {
+                using (Factory1 factory1 = new Factory1()) {
+                    using (Adapter1 adapter1 = factory1.GetAdapter1(adapterIndex)) {
+                        using (Device device = new Device(adapter1)) {
+                            using (Output output = adapter1.GetOutput(displayIndex)) {
+                                using (Output1 output1 = output.QueryInterface<Output1>()) {
+                                    Int32 width = output1.Description.DesktopBounds.Right - output1.Description.DesktopBounds.Left;
+                                    Int32 height = output1.Description.DesktopBounds.Bottom - output1.Description.DesktopBounds.Top;
+                                    Rectangle bounds = new Rectangle(Point.Empty, new Size(width, height));
+                                    Texture2DDescription texture2DDescription = new Texture2DDescription {
+                                        CpuAccessFlags = CpuAccessFlags.Read,
+                                        BindFlags = BindFlags.None,
+                                        Format = Format.B8G8R8A8_UNorm,
+                                        Width = width,
+                                        Height = height,
+                                        OptionFlags = ResourceOptionFlags.None,
+                                        MipLevels = 1,
+                                        ArraySize = 1,
+                                        SampleDescription = { Count = 1, Quality = 0 },
+                                        Usage = ResourceUsage.Staging
+                                    };
+                                    using (Texture2D texture2D = new Texture2D(device, texture2DDescription)) {
+                                        using (OutputDuplication outputDuplication = output1.DuplicateOutput(device)) {
+                                            status = Status.Active;
+                                            Int32 frameNumber = 0;
+                                            do {
+                                                try {
+                                                    Result result = outputDuplication.TryAcquireNextFrame(100, out _, out screenResource);
+                                                    if (result.Success) {
+                                                        frameNumber += 1;
+                                                        using (Texture2D screenTexture2D = screenResource.QueryInterface<Texture2D>()) {
+                                                            device.ImmediateContext.CopyResource(screenTexture2D, texture2D);
+                                                            DataBox dataBox = device.ImmediateContext.MapSubresource(texture2D, 0, MapMode.Read, MapFlags.None);
+                                                            Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb);
+                                                            BitmapData bitmapData = bitmap.LockBits(bounds, ImageLockMode.WriteOnly, bitmap.PixelFormat);
+                                                            IntPtr dataBoxPointer = dataBox.DataPointer;
+                                                            IntPtr bitmapDataPointer = bitmapData.Scan0;
+                                                            for (Int32 y = 0; y < height; y++) {
+                                                                Utilities.CopyMemory(bitmapDataPointer, dataBoxPointer, width * 4);
+                                                                dataBoxPointer = IntPtr.Add(dataBoxPointer, dataBox.RowPitch);
+                                                                bitmapDataPointer = IntPtr.Add(bitmapDataPointer, bitmapData.Stride);
+                                                            }
+                                                            bitmap.UnlockBits(bitmapData);
+                                                            device.ImmediateContext.UnmapSubresource(texture2D, 0);
+                                                            while (SkipFrames && bitmapQueue.Count > 1) {
+                                                                bitmapQueue.TryDequeue(out Bitmap dequeuedBitmap);
+                                                                dequeuedBitmap.Dispose();
+                                                            }
+                                                            if (frameNumber > 1 || SkipFirstFrame == false) {
+                                                                bitmapQueue.Enqueue(bitmap);
+                                                                waitHandle.Set();
+                                                            }
+                                                        }
+                                                    } else {
+                                                        if (ResultDescriptor.Find(result).ApiCode != Result.WaitTimeout.ApiCode) {
+                                                            result.CheckError();
+                                                        }
+                                                    }
+                                                } finally {
+                                                    screenResource?.Dispose();
+                                                    try {
+                                                        outputDuplication.ReleaseFrame();
+                                                    } catch { }
+                                                }
+                                            } while (status == Status.Active);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception exception) {
+                globalException = exception;
+                status = Status.Stops;
+            } finally {
+                callbackThread.Join();
+                Exception exception = globalException;
+                while (bitmapQueue.Count > 0) {
+                    bitmapQueue.TryDequeue(out Bitmap dequeuedBitmap);
+                    dequeuedBitmap.Dispose();
+                }
+                globalException = null;
+                waitHandle = null;
+                bitmapQueue = null;
+                captureThread = null;
+                callbackThread = null;
+                status = Status.Inactive;
+                if (OnCaptureStop != null) {
+                    OnCaptureStop(null, new OnCaptureStopEventArgs(exception != null ? new Exception(exception.Message, exception) : null));
+                } else {
+                    if (exception != null) {
+                        ExceptionDispatchInfo.Capture(exception).Throw();
+                    }
+                }
+            }
         }
 
-        private static void DisposeVariables(Boolean isSafe) {
-            if (isSafe != true && Thread != null) throw new Exception("Do not call DisposeVariables while capturing is active!");
-            Bitmap?.Dispose();
-            OutputDuplication?.Dispose();
-            Texture2D?.Dispose();
-            Output1?.Dispose();
-            Output?.Dispose();
-            Device?.Dispose();
-            Adapter1?.Dispose();
-            Factory1?.Dispose();
-            MakeScreenshot_LastAdapterIndexValue = -1;
-            MakeScreenshot_LastDisplayIndexValue = -1;
+        private static void CallbackMain(Action<Bitmap> onScreenUpdated) {
+            try {
+                while (status <= Status.Active) {
+                    while (waitHandle.WaitOne(10) && bitmapQueue.TryDequeue(out Bitmap bitmap)) {
+                        try {
+                            onScreenUpdated?.Invoke(bitmap);
+                            OnScreenUpdated?.Invoke(null, new OnScreenUpdatedEventArgs(bitmap));
+                        } finally {
+                            if (!PreserveBitmap) {
+                                bitmap.Dispose();
+                            }
+                        }
+                    }
+                }
+            } catch (Exception exception) {
+                globalException = exception;
+                status = Status.Stops;
+            }
         }
 
     }

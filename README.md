@@ -1,21 +1,41 @@
 # ScreenCapturer
 
-Library for fast screenshot make and screen capture based on [SharpDX](https://www.nuget.org/packages/SharpDX/) package. Available as [NuGet package](https://www.nuget.org/packages/ScreenCapturer/).
+Library for easy screen capture based on [SharpDX](https://github.com/sharpdx/SharpDX/) [package](https://www.nuget.org/packages/SharpDX/). Available as [NuGet package](https://www.nuget.org/packages/ScreenCapturer/).
 
 ## Usage
 
-`ScreenCapturer.MakeScreenshot()` — returning `Bitmap`\* with <b>next screen snapshot</b>.
+All methods, events and properties can be accessed using static `ScreenCapturer` class.
 
-`ScreenCapturer.StartCapturing(Action<Bitmap>)` — starting screen capture thread with callback function that recieves `Bitmap`\*\* as argument. `MakeScreenshot` can't be used while active.
+### Methods
 
-`ScreenCapturer.StopCapturing()` — stops capturing thread.
+`StartCapture` — starts capture and callback threads.
 
-`ScreenCapturer.DisableCallback()` — will disable callback without stopping capture.
+`StopCapturing` — asynchronously stops capture and callback threads.
 
-`ScreenCapturer.EnableCallback()` — will enable callback if it was disabled.
+### Events
 
-`ScreenCapturer.DisposeVariables()` — disposes some memoized static variables, should be used before program is terminated.
+`OnScreenUpdated` — dispatched when screen snapshot was made, additional info in notes.
 
-<sub>\* `MakeScreenshot` uses same `Bitmap` variable for all calls, so do not change its state, use only for read and note probably it's not thread safe.</sub>
+`OnCaptureStop` — dispatched when capture is stopped manually or because of exception.
 
-<sub>\*\* You must manually dispose `Bitmap` that is passed as argument to capture callback function, becase GC likes to leave those objects alive (unless you call `GC.Collect()`, but you probably shouldn't) and you will run into out of memory exception.</sub>
+### Flags and options
+
+`SkipFirstFrame` — if flag is set to `true` (default) then first captured screen snapshot gets skipped and no callbacks called (for some unknown reason it is a black screen, apparently [SharpDX](https://github.com/sharpdx/SharpDX/) related issue).
+
+`SkipFrames` — if flag is set to `true` (default) and snapshot queue size gets over than 2 bitmaps then oldest bitmaps get removed.
+
+`PreserveBitmap` — if flag is set to `false` (default) then after callbacks were executed bitmap gets disposed automatically.
+
+`IsActive` — read-only property that indicates that capture is active (it can be starting, in progress or going to be stopped).
+
+`IsNotActive` — read-only property that indicated that capture is not active (opposite to `IsActive`).
+
+### Notes
+
+You can set callback by passing action as argument to `StartCapture` or set it as standard event callback using `OnScreenUpdated`. `StopCapturing` will stop capture as fast as possible, however method will return immediately to minimize deadlock possibility. 
+
+Use `OnCaptureStop` event if you need to perform actions after capture was really stopped. If capture process gets interrupted by exception (SharpDX exception in capture thread or exception in any of capture callbacks in callback thread) and `OnCaptureStop` event has assigned callback — it will be called with exception as argument (might be useful if resolution gets changed and etc.), otherwise regular exception will be thrown.
+
+## Possible issues
+
+If capture gets often interrupted by SharpDX exceptions small memory leaks may occur, though it's should be unnoticable in most cases and can be ignored.
