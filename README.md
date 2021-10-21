@@ -2,6 +2,8 @@
 
 Library for easy screen capture based on [SharpDX](https://github.com/sharpdx/SharpDX/) [package](https://www.nuget.org/packages/SharpDX/). Available as [NuGet package](https://www.nuget.org/packages/ScreenCapturer/).
 
+Compatible with .NET Standard 2.0 and higher.
+
 ## Usage
 
 All methods, events and properties can be accessed using static `ScreenCapturer` class.

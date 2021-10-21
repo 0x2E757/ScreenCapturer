@@ -2,25 +2,26 @@
 <package>
   <metadata>
     <id>ScreenCapturer</id>
-    <version>2.0.0</version>
+    <version>3.0.0</version>
     <authors>0x2E757</authors>
     <owners>0x2E757</owners>
-    <licenseUrl>https://github.com/0x2E757/ScreenCapturer/blob/master/LICENSE</licenseUrl>
+    <license type="expression">MIT</license>
     <repository type="git" url="https://github.com/0x2E757/ScreenCapturer.git" branch="master" />
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Library for fast screenshot make and screen capture based on SharpDX package.</description>
     <copyright>Copyright 2019</copyright>
     <tags>screencapture screencapturer screenshot fast screen display monitor capture capturing</tags>
     <dependencies>
-      <group targetFramework="net45">
+      <group targetFramework="netstandard2.0">
         <dependency id="SharpDX" version="4.2.0.0" />
         <dependency id="SharpDX.Direct3D11" version="4.2.0.0" />
         <dependency id="SharpDX.DXGI" version="4.2.0.0" />
+        <dependency id="System.Drawing.Common" version="5.0.2" />
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="ScreenCapturer\bin\Release\ScreenCapturer.dll" target="lib\net45" />
-    <file src="ScreenCapturer\bin\Release\ScreenCapturer.pdb" target="lib\net45" />
+    <file src="ScreenCapturer\bin\Release\**\*.dll" target="lib" />
+    <file src="ScreenCapturer\bin\Release\**\*.pdb" target="lib" />
   </files>
 </package>

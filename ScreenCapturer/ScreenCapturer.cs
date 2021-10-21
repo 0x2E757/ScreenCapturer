@@ -23,18 +23,20 @@ namespace ScreenCapturerNS {
             Inactive = 4,
         }
 
-        private static Exception globalException;
-        private static AutoResetEvent waitHandle;
-        private static ConcurrentQueue<Bitmap> bitmapQueue;
-        private static Thread captureThread;
-        private static Thread callbackThread;
+        private static Exception globalException { get; set; }
+        private static AutoResetEvent waitHandle { get; set; }
+        private static ConcurrentQueue<Bitmap> bitmapQueue { get; set; }
+        private static Thread captureThread { get; set; }
+        private static Thread callbackThread { get; set; }
+
         private static volatile Status status;
+
+        public static Boolean SkipFirstFrame { get; set; }
+        public static Boolean SkipFrames { get; set; }
+        public static Boolean PreserveBitmap { get; set; }
 
         public static event EventHandler<OnScreenUpdatedEventArgs> OnScreenUpdated;
         public static event EventHandler<OnCaptureStopEventArgs> OnCaptureStop;
-        public static Boolean SkipFirstFrame;
-        public static Boolean SkipFrames;
-        public static Boolean PreserveBitmap;
 
         public static Boolean IsActive => status != Status.Inactive;
         public static Boolean IsNotActive => status == Status.Inactive;
@@ -62,6 +64,7 @@ namespace ScreenCapturerNS {
                 captureThread = new Thread(() => CaptureMain(adapterIndex, displayIndex));
                 callbackThread = new Thread(() => CallbackMain(onScreenUpdated));
                 status = Status.Starts;
+                captureThread.Priority = ThreadPriority.Highest;
                 captureThread.Start();
                 callbackThread.Start();
             }
