@@ -32,6 +32,31 @@ All methods, events and properties can be accessed using static `ScreenCapturer`
 
 `IsNotActive` — read-only property that indicated that capture is not active (opposite to `IsActive`).
 
+### Usage examples
+
+Minimal:
+```C#
+using System.Drawing;
+using ScreenCapturerNS;
+
+ScreenCapturer.StartCapture((Bitmap bitmap) => {
+    // Process image (bitmap) here
+});
+```
+
+Typical C# events way:
+```C#
+using System.Drawing;
+using ScreenCapturerNS;
+
+void OnScreenUpdated(Object? sender, OnScreenUpdatedEventArgs e) {
+    // Process image (e.Bitmap) here
+}
+
+ScreenCapturer.OnScreenUpdated += OnScreenUpdated;
+ScreenCapturer.StartCapture();
+```
+
 ### Notes
 
 You can set callback by passing action as argument to `StartCapture` or set it as standard event callback using `OnScreenUpdated`. `StopCapturing` will stop capture as fast as possible, however method will return immediately to minimize deadlock possibility. 
